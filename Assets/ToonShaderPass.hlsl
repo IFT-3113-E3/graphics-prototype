@@ -175,25 +175,46 @@
     data for each vertex of the mesh.
     */
     
-    Varyings Vertex(Attributes IN)
-    {
-        Varyings OUT = (Varyings)0;
-        
-        // These macros are required for VR SPI compatibility
-        UNITY_SETUP_INSTANCE_ID(IN);
-        UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
-        UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
-        
-        
-        // Set up each field of the Varyings struct, then return it.
-        OUT.positionWS = mul(unity_ObjectToWorld, IN.positionOS).xyz;
-        OUT.normalWS = NormalizeNormalPerPixel(TransformObjectToWorldNormal(IN.normalOS));
-        OUT.positionHCS = GetClipSpacePosition(OUT.positionWS, OUT.normalWS);
-        OUT.viewDirectionWS = normalize(GetWorldSpaceViewDir(OUT.positionWS));
-        OUT.uv = TRANSFORM_TEX(IN.uv, _ColorMap);
-        
-        return OUT;
-    }
+Varyings Vertex(Attributes IN)
+{
+    Varyings OUT = (Varyings)0;
+
+    // VR SPI Compatibility Macros
+    UNITY_SETUP_INSTANCE_ID(IN);
+    UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
+    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
+
+    // Convert Object-Space to World-Space
+    OUT.positionWS = mul(unity_ObjectToWorld, IN.positionOS).xyz;
+    OUT.normalWS = NormalizeNormalPerPixel(TransformObjectToWorldNormal(IN.normalOS));
+    
+    // Get Clip-Space Position
+    OUT.positionHCS = GetClipSpacePosition(OUT.positionWS, OUT.normalWS);
+
+    // Apply Pixel Snapping to Screen Space Position
+    float2 screenSize = _ScreenParams.xy; // Screen resolution (auto-set by Unity)
+    
+    // Convert Clip Space to Normalized Screen Space
+    float2 screenPos = OUT.positionHCS.xy / OUT.positionHCS.w;
+    
+    // Pixel size in NDC (Normalized Device Coordinates)
+    float2 pixelSize = 2.0 / screenSize;
+    
+    // Snap to the nearest pixel grid
+    screenPos = round(screenPos / pixelSize) * pixelSize;
+    
+    // Convert back to Clip Space
+    OUT.positionHCS.xy = screenPos * OUT.positionHCS.w;
+    
+    // Compute View Direction
+    OUT.viewDirectionWS = normalize(GetWorldSpaceViewDir(OUT.positionWS));
+
+    // UV Mapping
+    OUT.uv = TRANSFORM_TEX(IN.uv, _ColorMap);
+
+    return OUT;
+}
+
     
     /*
     The FragmentDepthOnly function is responsible 
