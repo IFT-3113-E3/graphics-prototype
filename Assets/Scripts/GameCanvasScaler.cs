@@ -102,6 +102,58 @@ public class GameCanvasScaler : MonoBehaviour
                 break;
         }
     }
+    
+    public void CalculateRaycastPosition(Vector2 position, out Vector2 result)
+    {
+        if (!renderTexture || !_rectTransform)
+        {
+            result = position;
+            return;
+        }
+
+        float screenAspect = (float)Screen.width / Screen.height;
+        float textureAspect = (float)renderTexture.width / renderTexture.height;
+
+        switch (displayMode)
+        {
+            case DisplayMode.Stretch:
+                result = position;
+                break;
+
+            case DisplayMode.Original:
+                result = new Vector2(
+                    position.x / Screen.width * renderTexture.width,
+                    position.y / Screen.height * renderTexture.height
+                );
+                break;
+
+            case DisplayMode.Fit:
+                if (textureAspect > screenAspect)
+                {
+                    result = new Vector2(
+                        position.x,
+                        position.y - (Screen.height - _rectTransform.sizeDelta.y) / 2
+                    );
+                }
+                else // Taller
+                {
+                    result = new Vector2(
+                        position.x - (Screen.width - _rectTransform.sizeDelta.x) / 2,
+                        position.y
+                    );
+                }
+
+                result = new Vector2(
+                    result.x / _rectTransform.sizeDelta.x * renderTexture.width,
+                    result.y / _rectTransform.sizeDelta.y * renderTexture.height
+                );
+                break;
+
+            default:
+                result = position;
+                break;
+        }
+    }
 
 #if UNITY_EDITOR
     private void OnValidate()
