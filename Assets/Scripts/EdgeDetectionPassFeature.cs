@@ -108,9 +108,6 @@ public class EdgeDetectionPassFeature : ScriptableRendererFeature
         {
             _material = edgeDetectionMaterial;
             renderPassEvent = settings.renderPassEvent;
-
-            _material.SetFloat(OutlineThicknessProperty, settings.outlineThickness);
-            _material.SetColor(OutlineColorProperty, settings.outlineColor);
         }
 
         private class PassData
@@ -137,8 +134,6 @@ public class EdgeDetectionPassFeature : ScriptableRendererFeature
     public class EdgeDetectionSettings
     {
         public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
-        [Range(0, 15)] public int outlineThickness = 3;
-        public Color outlineColor = Color.black;
     }
 
     [SerializeField] private EdgeDetectionSettings settings;
