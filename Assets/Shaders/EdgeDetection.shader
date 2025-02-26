@@ -27,7 +27,7 @@
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareNormalsTexture.hlsl" // needed to sample scene normals
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl" // needed to sample scene color/luminance
 
-            #include "Assets/Curvature.hlsl"
+            #include "Curvature.hlsl"
 
             #pragma vertex Vert // vertex shader is provided by the Blit.hlsl include
             #pragma fragment frag
