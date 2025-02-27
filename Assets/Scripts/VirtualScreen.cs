@@ -32,7 +32,7 @@ public class VirtualScreen : GraphicRaycaster
 
         // Convert screen position to the render texture's resolution
         canvasScaler.CalculateRaycastPosition(eventData.position, out Vector2 adjustedPosition);
-        Debug.Log($"Screen: {eventData.position} -> RenderTexture: {adjustedPosition}");
+
         // Create a new PointerEventData with the converted position
         eventData.position = adjustedPosition;
 

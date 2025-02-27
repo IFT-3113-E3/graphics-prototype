@@ -221,8 +221,8 @@
                 }
 
                 // If curvature is below the threshold, return the original texel
-                if (curvature < curvatureThreshold)
-                    return texel;
+                // if (curvature < curvatureThreshold)
+                //     return texel;
 
                 // The edges detected by normals are more invasive, so we are only going to apply them last.
                 if (nei > 0 && curvature < curvatureThreshold)
