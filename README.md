@@ -1,9 +1,22 @@
-This is a template for Unity projects, with sensible .gitignore defaults for Unity. This template includes an empty project configured with Unity's universal rendering pipeline.
+Ce projet utilise Unity 6000.0.38f1.
+Ce projet utilise des assets de l'Asset Store Unity. Ces assets ne sont pas contributoires au défi technique accompli.
 
-### Steps to get started
-1. Install the Unity 6 editor (6000.0.38f1)
-2. Download or clone the repository
-```bash
-git clone https://github.com/IFT-3113-E3/project-template.git
-```
-3. Open the repository folder with Unity
+Le shader d'edge detection utilise des fonctions de calcul de courbature provenant d'un repo GitHub de federicocasares:
+https://github.com/federicocasares/cavifree
+
+### Preview de la scène principale avec le shader d'edge detection activé
+![edgedetectionfinal.png](Preview/edgedetectionfinal.png)
+
+### Preview de la scène avec uniquement le shader d'edge detection
+![edgedetection.png](Preview/edgedetection.png)
+
+### Vidéos de démonstration
+
+#### Caméra stable, sans jtter
+[anti-jitter-camera-motion.mp4](Preview/anti-jitter-camera-motion.mp4)
+
+#### Rotation de la caméra orthographique
+[camera-rotation.mp4](Preview/camera-rotation.mp4)
+
+#### Changement de l'angle de l'illumination
+[lighting-change.mp4](Preview/lighting-change.mp4)
