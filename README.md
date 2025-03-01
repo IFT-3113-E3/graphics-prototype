@@ -10,13 +10,19 @@ https://github.com/federicocasares/cavifree
 ### Preview de la scène avec uniquement le shader d'edge detection
 ![edgedetection.png](Preview/edgedetection.png)
 
-### Vidéos de démonstration
+[//]: # (### Vidéos de démonstration)
 
-#### Caméra stable, sans jtter
-[anti-jitter-camera-motion.mp4](Preview/anti-jitter-camera-motion.mp4)
+[//]: # ()
+[//]: # (#### Caméra stable, sans jtter)
 
-#### Rotation de la caméra orthographique
-[camera-rotation.mp4](Preview/camera-rotation.mp4)
+[//]: # ([anti-jitter-camera-motion.mp4]&#40;Preview/anti-jitter-camera-motion.mp4&#41;)
 
-#### Changement de l'angle de l'illumination
-[lighting-change.mp4](Preview/lighting-change.mp4)
+[//]: # ()
+[//]: # (#### Rotation de la caméra orthographique)
+
+[//]: # ([camera-rotation.mp4]&#40;Preview/camera-rotation.mp4&#41;)
+
+[//]: # ()
+[//]: # (#### Changement de l'angle de l'illumination)
+
+[//]: # ([lighting-change.mp4]&#40;Preview/lighting-change.mp4&#41;)
