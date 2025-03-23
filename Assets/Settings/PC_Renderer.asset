@@ -154,3 +154,6 @@ MonoBehaviour:
   m_Active: 1
   settings:
     renderPassEvent: 450
+    colorPalette: {fileID: 2800000, guid: 6b14800d7f45ac54a903679346f818bb, type: 3}
+    numberOfColors: 2
+    lut: {fileID: 0}

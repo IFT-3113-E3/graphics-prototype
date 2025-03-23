@@ -95,9 +95,13 @@ public class EdgeDetectionPassFeature : ScriptableRendererFeature
     private class EdgeDetectionPass : ScriptableRenderPass
     {
         private Material _material;
+        private Texture2D _colorPalette;
+        private Texture3D _lut;
         
-        private static readonly int OutlineThicknessProperty = Shader.PropertyToID("_OutlineThickness");
-        private static readonly int OutlineColorProperty = Shader.PropertyToID("_OutlineColor");
+        private static readonly int PaletteSizeProperty = Shader.PropertyToID("_PaletteSize");
+        private static readonly int PaletteTexProperty = Shader.PropertyToID("_PaletteTex");
+        private static readonly int LUTProperty = Shader.PropertyToID("_LUT");
+        private static readonly int LUTSizeProperty = Shader.PropertyToID("_LUTSize");
         
         public EdgeDetectionPass()
         {
@@ -107,7 +111,16 @@ public class EdgeDetectionPassFeature : ScriptableRendererFeature
         public void Setup(ref EdgeDetectionSettings settings, ref Material edgeDetectionMaterial)
         {
             _material = edgeDetectionMaterial;
+            _colorPalette = settings.colorPalette;
             renderPassEvent = settings.renderPassEvent;
+            
+            edgeDetectionMaterial.SetInt(PaletteSizeProperty, settings.numberOfColors);
+            edgeDetectionMaterial.SetTexture(PaletteTexProperty, settings.colorPalette);
+            if (settings.lut)
+            {
+                edgeDetectionMaterial.SetInt(LUTSizeProperty, settings.lut.width);
+                edgeDetectionMaterial.SetTexture(LUTProperty, settings.lut);
+            }
         }
 
         private class PassData
@@ -120,9 +133,15 @@ public class EdgeDetectionPassFeature : ScriptableRendererFeature
             var intermediateTextureData = frameData.Get<DrawObjectsPass.IntermediateTextureData>();
             
             using var builder = renderGraph.AddRasterRenderPass<PassData>("Edge Detection", out _);
-
+            
+            RTHandle paletteHandle = RTHandles.Alloc(_colorPalette.width, _colorPalette.height, colorFormat: GraphicsFormat.R8G8B8A8_UNorm, enableRandomWrite: true, useMipMap: false, name: "_PaletteTex");
+            
+            TextureHandle paletteTexture = renderGraph.ImportTexture(paletteHandle);
+            
+            
             builder.SetRenderAttachment(resourceData.cameraColor, 0);
             builder.UseTexture(intermediateTextureData.IntermediateTexture, AccessFlags.Read);
+            builder.UseTexture(paletteTexture, AccessFlags.Read);
             builder.UseAllGlobalTextures(true);
             builder.AllowPassCulling(false);
             builder.SetRenderFunc((PassData _, RasterGraphContext context) => { Blitter.BlitTexture(context.cmd, Vector2.one, _material, 0); });
@@ -134,6 +153,9 @@ public class EdgeDetectionPassFeature : ScriptableRendererFeature
     public class EdgeDetectionSettings
     {
         public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
+        public Texture2D colorPalette;
+        public int numberOfColors = 256;
+        public Texture3D lut;
     }
 
     [SerializeField] private EdgeDetectionSettings settings;

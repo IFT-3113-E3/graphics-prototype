@@ -2,6 +2,9 @@
 {
     Properties
     {
+        _PaletteSize("Number of colors", Range(1, 256)) = 256
+        _LUTSize("LUT Size", Range(1, 256)) = 16
+        _LUT ("Color LUT", 3D) = "" {}
     }
 
     SubShader
@@ -21,6 +24,7 @@
 
             HLSLPROGRAM
 
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl" // needed to sample scene depth
@@ -29,14 +33,15 @@
 
             #include "Curvature.hlsl"
 
-            #pragma vertex Vert // vertex shader is provided by the Blit.hlsl include
-            #pragma fragment frag
-            
-            float3 SampleSceneNormalsRemapped(float2 uv)
-            {
-                return normalize(SampleSceneNormals(uv) * 2.0 - 1.0);
-            }
+            int _PaletteSize;
+            int _LUTSize;
 
+            TEXTURE2D(_PaletteTex);
+            SAMPLER(sampler_PaletteTex);
+
+            TEXTURE3D(_LUT);
+            SAMPLER(sampler_LUT);
+            
             TEXTURE2D(_EdgeDetectionFilterTexture);
             SAMPLER(sampler_EdgeDetectionFilterTexture);
             
@@ -45,6 +50,14 @@
 
             TEXTURE2D(_ScreenSpaceShadowmapTexture);
             SAMPLER(sampler_ScreenSpaceShadowmapTexture);
+            
+            #pragma vertex Vert // vertex shader is provided by the Blit.hlsl include
+            #pragma fragment frag
+            
+            float3 SampleSceneNormalsRemapped(float2 uv)
+            {
+                return normalize(SampleSceneNormals(uv) * 2.0 - 1.0);
+            }
             
             float getSSAO(float2 vUv, int x, int y)
             {
@@ -89,7 +102,7 @@
             // Computes the edge indicator from one neighbor.
             float neighborNormalEdgeIndicator(float2 vUv, int x, int y, float depth, float3 normal) {
                 float depthDiff = depth - getDepth(vUv, x, y);
-                float3 normalEdgeBias = float3(1.0, 1.0, 1.0); // Can be parameterized if needed.
+                float3 normalEdgeBias = float3(1.0, 1.0, 1.0);
                 float normalDiff = dot(normal - getNormal(vUv, x, y), normalEdgeBias);
                 float normalIndicator = clamp(smoothstep(-0.01, 0.01, normalDiff), 0.0, 1.0);
                 float depthIndicator = clamp(sign(depthDiff * 0.25 + 0.0025), 0.0, 1.0);
@@ -148,7 +161,6 @@
                 diff += clamp(depth - getDepth(vUv, -1, 0), 0.0, 1.0);
                 diff += clamp(depth - getDepth(vUv, 0, 1), 0.0, 1.0);
                 diff += clamp(depth - getDepth(vUv, 0, -1), 0.0, 1.0);
-
                 
                 float threshold = 1 / 200.0f;
                 return floor(smoothstep(threshold/2, threshold, diff) * 2.0) / 2.0;
@@ -176,12 +188,100 @@
                 float3 color = SampleSceneColor(uv);
                 return color.r * 0.3 + color.g * 0.59 + color.b * 0.11;
             }
+
+            float3 ApplyLUT(float3 color)
+            {
+                // Ensure values are in 0-1 range and convert to LUT coords
+                color = saturate(color);
+                float3 coord = color * (_LUTSize - 1.0) / _LUTSize + 0.5 / _LUTSize;
+                return SAMPLE_TEXTURE3D(_LUT, sampler_LUT, coord).rgb;
+            }
+
+            // Find the closest color in the palette
+            float3 FindClosestPaletteColor(float3 color)
+            {
+                float closestDist = 999999.0;
+                float3 bestMatch = color;
+                if (_PaletteSize > pow(2, 10)) return bestMatch;
+                for (int i = 0; i < _PaletteSize; i++)
+                {
+                    float2 uv = float2(i / (_PaletteSize - 1.0), 0.5);
+                    float3 paletteColor = SAMPLE_TEXTURE2D(_PaletteTex, sampler_PaletteTex, uv).rgb;
+            
+                    float dist = distance(color, paletteColor);
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        bestMatch = paletteColor;
+                    }
+                }
+                return bestMatch;
+            }
+
+            // Find the closest color in the palette while preserving HDR brightness
+            float3 FindClosestPaletteColorHDR(float3 color, float originalLuminance)
+            {
+                float closestDist = 999999.0;
+                float3 bestMatch = color;
+                float bestLuminance = 0.0;
+                
+                if (_PaletteSize > pow(2, 10)) return bestMatch;
+
+                // Find the closest color in the palette
+                for (int i = 0; i < _PaletteSize; i++)
+                {
+                    float2 uv = float2(i / (_PaletteSize - 1.0), 0.5);
+                    float3 paletteColor = SAMPLE_TEXTURE2D(_PaletteTex, sampler_PaletteTex, uv).rgb;
+                    
+                    float paletteLuminance = Luminance(paletteColor);
+                    float dist = distance(color, paletteColor);
+
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        bestMatch = paletteColor;
+                        bestLuminance = paletteLuminance;
+                    }
+                }
+
+                // Quantize luminance: find the closest luminance step from the palette
+                float closestLuminanceDist = 999999.0;
+                float quantizedLuminance = originalLuminance;
+
+                for (int i = 0; i < _PaletteSize; i++)
+                {
+                    float2 uv = float2(i / (_PaletteSize - 1.0), 0.5);
+                    float3 paletteColor = SAMPLE_TEXTURE2D(_PaletteTex, sampler_PaletteTex, uv).rgb;
+                    float paletteLuminance = Luminance(paletteColor);
+
+                    float lumDist = abs(originalLuminance - paletteLuminance);
+                    if (lumDist < closestLuminanceDist)
+                    {
+                        closestLuminanceDist = lumDist;
+                        quantizedLuminance = paletteLuminance;
+                    }
+                }
+
+                // Apply quantized luminance scaling (ensuring HDR brightness is quantized)
+                float luminanceScale = quantizedLuminance / max(Luminance(bestMatch), 0.001);
+                return bestMatch * luminanceScale;
+            }
+
             
             float4 frag(Varyings i) : SV_Target
             {
                 float2 uv = i.texcoord;
-                float4 texel = float4(SampleSceneColor(uv), 1);
+                float3 originalColor = SampleSceneColor(uv);
+                float originalLuminance = Luminance(originalColor);
 
+                float3 finalColor = originalColor;//ApplyLUT(originalColor);//FindClosestPaletteColorHDR(originalColor.rgb, originalLuminance);
+                
+                // float excessBrightness = max(0.0, originalLuminance - 1.0);
+                // finalColor += excessBrightness; // Add bloom while respecting palette
+
+                float4 texel = float4(finalColor, 1.0);
+                
+                
                 // Edge detection coefficients
                 float normalEdgeCoefficient = 0.5;
                 float depthEdgeCoefficient = 0.5;
@@ -194,7 +294,7 @@
                 float curvature = getCurvature(uv, 0, 0);
 
                 // Compute edge color
-                float4 edgeColor = float4(SampleSceneColor(uv), 1);
+                float4 edgeColor = texel;
                 
                 // Compute depth-based coefficient
                 float coefficient = (dei > 0.0) 
