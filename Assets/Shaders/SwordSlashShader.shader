@@ -22,7 +22,7 @@
         {
             Name "SWORD SLASH"
 
-            Blend SrcAlpha One
+            Blend SrcAlpha OneMinusSrcAlpha
             Cull Off
             ZWrite Off
 
@@ -94,8 +94,8 @@
                 float _Frames = 4;
                 float _Bands = 8*3;
                 float _Shades = 3;
-                float _GlowStrength = 1.0;
-                float _MinBrightness = 0.3;
+                float _GlowStrength = 4.0;
+                float _MinBrightness = 0.2;
                 float _DelayStrength = 0.1;
                 
                 float _MaxFragments = 3;
@@ -150,7 +150,7 @@
                 if (!visible)
                     discard;
 
-                return float4(color, _BaseColor.a);
+                return float4(color, _BaseColor.a * 0.96);
             }
             ENDHLSL
         }
