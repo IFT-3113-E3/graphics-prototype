@@ -29,6 +29,7 @@ public class SwordSlashGenerator : MonoBehaviour {
     [Header("Sword Follower")]
     public Transform sword;
     [Range(0, 1)] public float swordT;
+    [Range(0, 1)] public float swordTransformT;
 
     private Mesh _mesh;
     private Material _material;
@@ -191,7 +192,7 @@ public class SwordSlashGenerator : MonoBehaviour {
     void UpdateSwordTransform() {
         if (!sword) return;
 
-        float t = swordT;
+        float t = swordTransformT;
         Vector3 pos = CubicBezier(t, _p0, _p1, _p2, _p3);
         Vector3 tangent = BezierFirstDerivative(t, _p0, _p1, _p2, _p3).normalized;
         
